@@ -1,31 +1,57 @@
 # RJF8 GRADE 9
 
-A Persian, RTL, mobile-responsive learning portal for Grade 9.
+سامانهٔ آموزشی فارسی و راست‌چین پایهٔ نهم، با رابط واکنش‌گرا و زیرساخت Supabase.
 
-## Current foundation
+## امکانات فعلی
 
-- Dashboard and responsive subject navigation
-- 11 subject areas: Math, Science, Persian, Arabic, English, Social Studies, Heavenly Messages, Quran, Defense Preparation, Technology, and Art
-- Supabase email/password authentication
-- User profiles and progress tracking
-- Lesson publishing structure and quiz data structure
-- Row Level Security policies for user-owned progress and admin-managed content
-- Single-page frontend in `index.html` to keep the project structure compact
+- داشبورد و فهرست ۱۱ حوزهٔ درسی
+- جست‌وجوی درس‌ها
+- درس‌نامه با محتوای HTML
+- فهرست آزمون‌ها و اجرای آزمون چندگزینه‌ای
+- تصحیح پاسخ‌ها در سمت سرور؛ کلید پاسخ در جدول خصوصی نگهداری می‌شود
+- ذخیرهٔ نتیجه، درصد، تعداد پاسخ درست و XP
+- پروفایل کاربر، ورود و ثبت‌نام ایمیلی
+- ثبت وضعیت مطالعه و تکمیل درس
+- تم روشن/تیره با ذخیرهٔ انتخاب کاربر
+- منوی موبایل با بستن از بیرون و کلید Escape
+- یک فایل اصلی فرانت‌اند برای ساده ماندن ساختار پروژه
+
+## درس‌ها و محتوای نمونهٔ فعلی
+
+برای هر یک از ۱۱ حوزه، دو درس آغازین و یک آزمون سه‌سؤالی برای هر درس ثبت شده است:
+- ۲۲ درس منتشرشده
+- ۲۲ آزمون منتشرشده
+- ۶۶ پرسش چهارگزینه‌ای
+
+این محتوا یک مجموعهٔ آغازین و نمونهٔ آموزشی است؛ هنوز پوشش کامل همهٔ فصل‌ها و همهٔ درس‌های کتاب‌های رسمی پایه نهم نیست. پیش از استفادهٔ مدرسه‌ای، محتوا باید با چاپ همان سال کتاب‌های درسی تطبیق و بازبینی آموزشی شود.
+
+## ساختار فایل‌ها
+
+- `index.html` رابط و منطق سمت کاربر
+- `supabase/schema.sql` یادداشت ساختار پایگاه داده
+- `.github/workflows/pages.yml` انتشار خودکار با GitHub Pages
 
 ## Backend
 
-Supabase project: `gbuomuxrgmombwgsftce`
+Supabase project ref: `gbuomuxrgmombwgsftce`
 
-The initial database schema is applied to the connected Supabase project. The frontend uses the public publishable key only. Never put a Supabase secret/service-role key in browser code.
+از کلید عمومی publishable در مرورگر استفاده شده است. هرگز service-role یا secret key را در فایل سمت کاربر قرار ندهید.
 
-## Run locally
+### امنیت آزمون
 
-Open `index.html` through a local static server or deploy it to a static host. It loads Supabase JS v2 from jsDelivr and Vazirmatn from Google Fonts.
+تابع `public.submit_quiz_attempt` پاسخ‌ها را با کلیدهای موجود در `private.quiz_answer_keys` در سمت سرور بررسی می‌کند و نتیجه و XP را ثبت می‌کند. اجرای آن فقط برای کاربران واردشده مجاز است.
 
-## Publish
+## اجرای محلی
 
-Enable GitHub Pages for this repository (Settings → Pages → Deploy from a branch → main → /root), or connect it to a static hosting provider. A live URL is not available until hosting is configured.
+`index.html` را از طریق یک static server باز کنید. Supabase JS v2 و فونت Vazirmatn از CDN بارگذاری می‌شوند.
 
-## Content status
+## انتشار
 
-The subject catalogue and backend structures are ready. Lesson notes and quiz banks are not yet populated; they must be authored and reviewed per Grade 9 curriculum before publication.
+در GitHub به Settings → Pages بروید و Source را روی GitHub Actions قرار دهید. پس از اجرای موفق workflow، GitHub آدرس انتشار را در همان صفحه نمایش می‌دهد. تا زمان فعال‌سازی و موفقیت workflow، لینک زنده تضمین‌شده نیست.
+
+## کارهای باقی‌مانده
+
+- تکمیل درس‌نامه‌ها و آزمون‌ها برای تمام فصل‌های کتاب‌های رسمی
+- افزودن پنل مدیریت محتوا با نقش مدیر امن
+- آزمون کامل روی مرورگرها و گوشی‌های مختلف
+- تنظیم سیاست تأیید ایمیل و امنیت رمز عبور در Supabase
