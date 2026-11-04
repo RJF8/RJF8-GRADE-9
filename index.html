@@ -127,18 +127,18 @@ async function progressView(){
  $("progressPanel").innerHTML=progress.length?progress.map(p=>{const lesson=Array.from(lessonCache.values()).find(x=>x&&x.id===p.lesson_id);return '<div class="lesson-row"><div><b>'+(lesson?.title||(p.status==="completed"?"درس تکمیل‌شده":"در حال یادگیری"))+'</b><small>'+(p.progress_percent||0)+'% پیشرفت</small></div><span>'+(p.last_seen_at?new Date(p.last_seen_at).toLocaleDateString("fa-IR"):"-")+'</span></div>'}).join(""):'<div class="empty">هنوز فعالیتی ثبت نشده است. از بخش درس‌ها شروع کن.</div>'
 }
 async function quizView(){
- $('crumb').textContent='آزمون‌ها';
+ activeView='quizzes';$('crumb').textContent='آزمون‌ها';
  $('view').innerHTML='<div class="section-head"><div><h2>آزمون‌ها و سنجش</h2><p>آزمون‌های منتشرشده همه درس‌ها</p></div></div><div class="content-panel" id="quizList"><div class="empty">در حال دریافت آزمون‌ها…</div></div>';
  if(!db){$('quizList').innerHTML='<div class="empty">اتصال پایگاه داده در دسترس نیست.</div>';return}
- const {data,error}=await db.from('quizzes').select('id,title,description,question_count,lessons!inner(title,subject_id)').eq('is_published',true).order('created_at');
+ let data=quizCache.get('catalogue'),error=null;if(!data){const res=await db.from('quizzes').select('id,title,description,question_count,lessons!inner(title,subject_id)').eq('is_published',true).order('created_at',{ascending:false});data=res.data;error=res.error;if(!error)quizCache.set('catalogue',data||[])}
  if(error){$('quizList').innerHTML='<div class="empty">دریافت آزمون‌ها ناموفق بود.</div>';return}
  if(!data?.length){$('quizList').innerHTML='<div class="empty">هنوز آزمونی منتشر نشده است.</div>';return}
  $('quizList').innerHTML=data.map(q=>{const s=subjects.find(x=>x.id===q.lessons?.subject_id);return `<div class="lesson-row"><div><b>${q.title}</b><small>${s?.title||'پایه نهم'} • ${q.question_count} پرسش • ${q.lessons?.title||''}</small></div><button data-quiz="${q.id}" data-title="${q.title}">شروع آزمون</button></div>`}).join('');
  $('quizList').querySelectorAll('[data-quiz]').forEach(btn=>btn.onclick=()=>startQuiz(btn.dataset.quiz,btn.dataset.title))
 }
 async function startQuiz(id,title){
- if(!user){showAuth();toast('برای ذخیره نتیجه ابتدا وارد حساب شو');return}
- const {data:questions,error}=await db.from('quiz_questions').select('id,prompt,options,explanation,sort_order').eq('quiz_id',id).order('sort_order');
+ activeView='quiz';if(!user){showAuth();toast('برای ذخیره نتیجه ابتدا وارد حساب شو');return}
+ let questions=questionCache.get(id),error=null;if(!questions){const res=await db.from('quiz_questions').select('id,prompt,options,explanation,sort_order').eq('quiz_id',id).order('sort_order');questions=res.data;error=res.error;if(!error)questionCache.set(id,questions||[])}
  if(error||!questions?.length){toast('پرسش‌های آزمون دریافت نشدند');return}
  const answers={};
  $('crumb').textContent='آزمون';
