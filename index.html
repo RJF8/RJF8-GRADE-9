@@ -75,11 +75,11 @@ const fallbackSubjects=[
 ['technology','کار و فناوری','فناوری','مهارت‌های کاربردی و پروژه‌ها','⚙️','#7895a8'],
 ['art','فرهنگ و هنر','هنر','آشنایی با هنر و فعالیت‌های خلاقانه','🎨','#d58ab9']
 ].map((x,i)=>({slug:x[0],title:x[1],short_title:x[2],description:x[3],icon:x[4],accent:x[5],sort_order:i+1}));
-let subjects=[],user=null,currentSubject=null,light=localStorage.getItem('rjf8-theme')==='light',signup=false,progress=[],activeView='home',progressLoadedFor=null,profileLoadedFor=null;
+let subjects=[],user=null,currentSubject=null,light=false,signup=false,progress=[],activeView='home',progressLoadedFor=null,profileLoadedFor=null;try{light=localStorage.getItem('rjf8-theme')==='light'}catch(e){}
 const lessonCache=new Map(),quizCache=new Map(),questionCache=new Map();
 const $=id=>document.getElementById(id);
 
-function applyTheme(){document.documentElement.dataset.theme=light?"light":"dark";$("themeBtn").textContent=light?"☾ حالت تیره":"☼ حالت روشن";localStorage.setItem("rjf8-theme",light?"light":"dark")}
+function applyTheme(){document.documentElement.dataset.theme=light?"light":"dark";$("themeBtn").textContent=light?"☾ حالت تیره":"☼ حالت روشن";try{localStorage.setItem("rjf8-theme",light?"light":"dark")}catch(e){}}
 function loadSupabaseLibrary(){
  if(window.supabase?.createClient)return Promise.resolve();
  if(supabaseLoadPromise)return supabaseLoadPromise;
@@ -114,7 +114,7 @@ function subjectList(){
  $('subjectSearch').addEventListener('input',e=>render(e.target.value));bindSubjects()
 }
 async function openSubject(slug){
- currentSubject=subjects.find(s=>s.slug===slug);if(!currentSubject)return;
+ currentSubject=subjects.find(s=>s.slug===slug);if(!currentSubject)return;if(!currentSubject.id){toast("در حال دریافت فهرست درس‌ها هستیم؛ یک لحظه دیگر دوباره تلاش کن");return}
  activeView="subject";$("crumb").textContent=currentSubject.short_title;
  $("view").innerHTML='<button class="back" id="backSubjects">← بازگشت به درس‌ها</button><section class="hero subject-hero"><div class="eyebrow">SUBJECT / GRADE 9</div><h1>'+currentSubject.icon+' '+currentSubject.title+'</h1><p>'+(currentSubject.description||"محتوای آموزشی این درس")+'</p></section><div class="section-head"><div><h2>درس‌نامه‌ها و تمرین‌ها</h2><p>درس را باز کن و پس از مطالعه در آزمون شرکت کن.</p></div></div><div class="content-panel" id="lessonsPanel"><div class="empty">در حال دریافت درس‌ها…</div></div>';
  $("backSubjects").onclick=()=>setView("subjects");
