@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl"><script>try{document.documentElement.dataset.theme=localStorage.getItem("rjf8-theme")||"dark"}catch(e){}</script>
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1020"><title>RJF8 GRADE 9 | یادگیری پایه نهم</title>
@@ -12,6 +12,30 @@
 @media(max-width:950px){.subject-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.app{display:block}.sidebar{position:fixed;z-index:15;top:0;right:0;width:270px;transform:translateX(105%);transition:.25s;box-shadow:var(--shadow)}.sidebar.open{transform:translateX(0)}.main{padding:18px 14px 40px}.mobile-menu{display:inline-flex}.topbar{margin-bottom:18px}.hero{border-radius:19px}.hero-row{display:block}.hero-btn{margin-top:17px}.subject-grid{grid-template-columns:1fr 1fr;gap:9px}.subject{padding:13px;min-height:148px}.subject p{font-size:10px}.stats{gap:8px}.stat{padding:12px}.stat strong{font-size:21px}.section-head{margin-top:25px}.top-actions .pill{padding:8px}.side-bottom{display:none}}
 @media(max-width:390px){.subject-grid{grid-template-columns:1fr}.hero h1{font-size:25px}}
+
+html[data-theme="light"]{--bg:#f3f6fc;--panel:#fff;--panel2:#edf2fa;--line:#dce4f0;--text:#17243a;--muted:#66758d;--shadow:0 14px 38px #25385a12}
+html[data-theme="light"] body{background:radial-gradient(ellipse at 85% -10%,#8b83ff18,transparent 40%),var(--bg)}
+html[data-theme="light"] .sidebar{background:#ffffffed}
+html[data-theme="light"] .nav button{color:#596981}
+html[data-theme="light"] .nav button:hover,html[data-theme="light"] .nav button.active{background:#7770ff14;color:#473fc1}
+html[data-theme="light"] .pill{background:#fff;color:var(--text)}
+html[data-theme="light"] .subject{background:linear-gradient(145deg,#fff,#f7f9fd)}
+html[data-theme="light"] .field{background:#fff;color:var(--text)}
+html[data-theme="light"] .dialog{background:#fff}
+html[data-theme="light"] .lesson-row button{color:#5149bf;background:#7770ff12}
+html[data-theme="light"] .quiz-option{background:#f7f9fd;color:var(--text)}
+html[data-theme="light"] .side-bottom{background:linear-gradient(145deg,#eeedff,#e9f5fa);border-color:#dce4f0}
+html[data-theme="light"] .side-bottom p{color:#596981}
+html[data-theme="light"] .hero{background:linear-gradient(115deg,#e8e8ff,#e4f1fb 60%,#e1f6f3);border-color:#d8d7ff}
+html[data-theme="light"] .hero p{color:#4d5d76}
+html[data-theme="light"] .eyebrow{color:#5149bf}
+html[data-theme="light"] .hero:after{color:#25385a;opacity:.035}
+html[data-theme="light"] .toast{background:#fff;color:var(--text)}
+html[data-theme="light"] .modal{background:#17243a66}
+.subject-hero{background:linear-gradient(115deg,color-mix(in srgb,var(--subject-accent) 18%,var(--panel)),var(--panel2))}
+html[data-theme="light"] .subject-hero{background:linear-gradient(115deg,color-mix(in srgb,var(--subject-accent) 17%,#fff),#edf2fa)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
 </style></head>
 <body>
 <div class="app">
@@ -157,6 +181,17 @@ $('authNav').onclick=async()=>{if(user){const btn=$('authNav');btn.disabled=true
 document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 $('menuBtn').onclick=()=>$('sidebar').classList.toggle('open');document.addEventListener('click',e=>{if(window.innerWidth<=700&&$('sidebar').classList.contains('open')&&!$('sidebar').contains(e.target)&&e.target!==$('menuBtn'))$('sidebar').classList.remove('open')});document.addEventListener('keydown',e=>{if(e.key==='Escape')$('sidebar').classList.remove('open')});
 $('themeBtn').onclick=()=>{light=!light;applyTheme()};
-async function init(){if(light){document.documentElement.style.setProperty('--bg','#f2f5fb');document.documentElement.style.setProperty('--panel','#ffffff');document.documentElement.style.setProperty('--panel2','#edf1f8');document.documentElement.style.setProperty('--line','#dce3ef');document.documentElement.style.setProperty('--text','#17233a');document.documentElement.style.setProperty('--muted','#65738b');$('themeBtn').textContent='☾ حالت تیره'}if(!db){toast('کتابخانه اتصال بارگذاری نشد');subjects=fallbackSubjects;home();return}let {data,error}=await db.from('subjects').select('*').eq('is_published',true).order('sort_order');subjects=(!error&&data?.length)?data:fallbackSubjects;await syncAuth();db.auth.onAuthStateChange(()=>setTimeout(syncAuth,0))}
+async function init(){
+ applyTheme();subjects=fallbackSubjects;home();
+ try{
+  await loadSupabaseLibrary();
+  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  const sessionResult=await db.auth.getSession();if(sessionResult.error)throw sessionResult.error;
+  handleSession(sessionResult.data.session);
+  db.auth.onAuthStateChange((event,session)=>handleSession(session));
+  const subjectResult=await db.from("subjects").select("id,slug,title,short_title,description,icon,accent,sort_order").eq("is_published",true).order("sort_order");
+  if(!subjectResult.error&&subjectResult.data?.length){subjects=subjectResult.data;lessonCache.clear();quizCache.clear();if(activeView==="home")home()}
+ }catch(err){console.error("RJF8 initialization:",err);toast("ارتباط با سرور برقرار نشد؛ بعداً دوباره تلاش کن")}
+}
 init();
 </script></body></html>
