@@ -1,0 +1,5 @@
+-- RJF8 GRADE 9 initial database schema
+-- This migration has already been applied to Supabase project gbuomuxrgmombwgsftce.
+-- Keep this file as the versioned schema reference. See README.md for setup notes.
+-- Tables: profiles, subjects, lessons, quizzes, quiz_questions, private.quiz_answer_keys,
+-- lesson_progress, quiz_attempts, announcements. RLS is enabled on all exposed tables.
