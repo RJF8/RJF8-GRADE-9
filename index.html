@@ -91,27 +91,33 @@ function subjectList(){
 }
 async function openSubject(slug){
  currentSubject=subjects.find(s=>s.slug===slug);if(!currentSubject)return;
- $('crumb').textContent=currentSubject.short_title;
- $('view').innerHTML=`<button class="back" id="backSubjects">← بازگشت به درس‌ها</button><section class="hero" style="background:linear-gradient(115deg,${currentSubject.accent}55,#172d49)"><div class="eyebrow">SUBJECT / GRADE 9</div><h1>${currentSubject.icon} ${currentSubject.title}</h1><p>${currentSubject.description||'محتوای آموزشی این درس'}</p></section><div class="section-head"><div><h2>درس‌نامه‌ها و تمرین‌ها</h2><p>درس را باز کن و پس از مطالعه در آزمون شرکت کن.</p></div></div><div class="content-panel" id="lessonsPanel"><div class="empty">در حال دریافت درس‌ها…</div></div>`;
- $('backSubjects').onclick=()=>subjectList();
- if(!db){$('lessonsPanel').innerHTML='<div class="empty">اتصال پایگاه داده در دسترس نیست.</div>';return}
- const {data,error}=await db.from('lessons').select('id,title,summary,lesson_number,estimated_minutes').eq('subject_id',currentSubject.id).eq('is_published',true).order('lesson_number');
- const panel=$('lessonsPanel');if(error){panel.innerHTML='<div class="empty">خطا در دریافت درس‌ها. اتصال اینترنت و تنظیمات پایگاه داده را بررسی کن.</div>';return}
- if(!data?.length){panel.innerHTML='<div class="empty">هنوز درس‌نامه‌ای برای این بخش منتشر نشده است.</div>';return}
- panel.innerHTML=data.map(l=>`<div class="lesson-row"><div><b>${l.lesson_number}. ${l.title}</b><small>${l.summary||'درس‌نامه و تمرین'} • ${l.estimated_minutes} دقیقه</small></div><button data-lesson="${l.id}">مطالعه درس ←</button></div>`).join('');
- panel.querySelectorAll('[data-lesson]').forEach(btn=>btn.onclick=()=>openLesson(btn.dataset.lesson))
+ activeView="subject";$("crumb").textContent=currentSubject.short_title;
+ $("view").innerHTML='<button class="back" id="backSubjects">← بازگشت به درس‌ها</button><section class="hero subject-hero"><div class="eyebrow">SUBJECT / GRADE 9</div><h1>'+currentSubject.icon+' '+currentSubject.title+'</h1><p>'+(currentSubject.description||"محتوای آموزشی این درس")+'</p></section><div class="section-head"><div><h2>درس‌نامه‌ها و تمرین‌ها</h2><p>درس را باز کن و پس از مطالعه در آزمون شرکت کن.</p></div></div><div class="content-panel" id="lessonsPanel"><div class="empty">در حال دریافت درس‌ها…</div></div>';
+ $("backSubjects").onclick=()=>setView("subjects");
+ if(!db){$("lessonsPanel").innerHTML='<div class="empty">در حال اتصال به سرور… کمی بعد دوباره تلاش کن.</div>';return}
+ let rows=lessonCache.get(slug);
+ if(!rows){const res=await db.from("lessons").select("id,title,summary,lesson_number,estimated_minutes").eq("subject_id",currentSubject.id).eq("is_published",true).order("lesson_number");if(res.error){$("lessonsPanel").innerHTML='<div class="empty">دریافت درس‌ها ناموفق بود. اتصال را بررسی و دوباره تلاش کن.</div>';return}rows=res.data||[];lessonCache.set(slug,rows)}
+ const panel=$("lessonsPanel");if(!rows.length){panel.innerHTML='<div class="empty">هنوز درس‌نامه‌ای برای این بخش منتشر نشده است.</div>';return}
+ panel.innerHTML=rows.map(l=>'<div class="lesson-row"><div><b>'+l.lesson_number+'. '+l.title+'</b><small>'+(l.summary||"درس‌نامه و تمرین")+' • '+(l.estimated_minutes||15)+' دقیقه</small></div><button data-lesson="'+l.id+'">مطالعه درس ←</button></div>').join("");
+ panel.querySelectorAll("[data-lesson]").forEach(btn=>btn.onclick=()=>openLesson(btn.dataset.lesson))
 }
 async function openLesson(id){
- if(!db)return toast('اتصال پایگاه داده برقرار نیست');
- const {data,error}=await db.from('lessons').select('*').eq('id',id).single();
- if(error||!data){toast('دریافت درس انجام نشد');return}
- if(user)await db.from('lesson_progress').upsert({user_id:user.id,lesson_id:id,status:'started',progress_percent:10,last_seen_at:new Date().toISOString()});
- const {data:quiz}=await db.from('quizzes').select('id,title,question_count').eq('lesson_id',id).eq('is_published',true).maybeSingle();
- const c=data.content||{};
- $('view').innerHTML=`<button class="back" id="backLesson">← بازگشت به فهرست</button><div class="section-head"><div><h2>${data.title}</h2><p>${currentSubject.title} • حدود ${data.estimated_minutes} دقیقه مطالعه</p></div></div><article class="content-panel lesson-content" style="line-height:2.25;font-size:14px">${c.html||'<div class="empty">محتوای این درس هنوز آماده نشده است.</div>'}</article><div class="content-panel" style="margin-top:14px"><b>پایان مطالعه</b><p style="color:var(--muted);font-size:12px">با شرکت در آزمون، نتیجه و امتیاز تجربه‌ات ذخیره می‌شود.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="primary" id="completeLesson">ثبت مطالعه به‌عنوان تکمیل‌شده</button>${quiz?'<button class="pill" id="lessonQuiz">شروع آزمون ('+quiz.question_count+' پرسش)</button>':''}</div></div>`;
- $('backLesson').onclick=()=>openSubject(currentSubject.slug);
- $('completeLesson').onclick=async()=>{if(!user){showAuth();return}const {error}=await db.from('lesson_progress').upsert({user_id:user.id,lesson_id:id,status:'completed',progress_percent:100,last_seen_at:new Date().toISOString(),completed_at:new Date().toISOString()});if(error)toast('ذخیره پیشرفت ناموفق بود');else{toast('درس تکمیل‌شده ثبت شد');await loadProgress();home()}};
- if(quiz)$('lessonQuiz').onclick=()=>startQuiz(quiz.id,quiz.title)
+ if(!db)return toast("اتصال به سرور برقرار نیست");
+ let data=lessonCache.get("lesson:"+id),quiz=quizCache.get("lesson:"+id);
+ if(!data||quiz===undefined){
+  const jobs=[];
+  jobs.push(data?Promise.resolve({data,error:null}):db.from("lessons").select("id,title,content,estimated_minutes,lesson_number").eq("id",id).single());
+  jobs.push(quiz!==undefined?Promise.resolve({data:quiz,error:null}):db.from("quizzes").select("id,title,question_count").eq("lesson_id",id).eq("is_published",true).maybeSingle());
+  const results=await Promise.all(jobs),lessonRes=results[0],quizRes=results[1];
+  if(lessonRes.error||!lessonRes.data){toast("دریافت درس انجام نشد");return}
+  data=lessonRes.data;quiz=quizRes.data||null;lessonCache.set("lesson:"+id,data);quizCache.set("lesson:"+id,quiz)
+ }
+ const subject=currentSubject||{title:"پایه نهم",slug:""};
+ activeView="lesson";$("crumb").textContent=data.title;
+ $("view").innerHTML='<button class="back" id="backLesson">← بازگشت به فهرست</button><div class="section-head"><div><h2>'+data.title+'</h2><p>'+subject.title+' • حدود '+(data.estimated_minutes||15)+' دقیقه مطالعه</p></div></div><article class="content-panel lesson-content" style="line-height:2.25;font-size:14px">'+(data.content?.html||'<div class="empty">محتوای این درس هنوز آماده نشده است.</div>')+'</article><div class="content-panel" style="margin-top:14px"><b>پایان مطالعه</b><p style="color:var(--muted);font-size:12px">با ثبت مطالعه یا شرکت در آزمون، روند یادگیری‌ات ذخیره می‌شود.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="primary" id="completeLesson">ثبت مطالعه به‌عنوان تکمیل‌شده</button>'+(quiz?'<button class="pill" id="lessonQuiz">شروع آزمون ('+quiz.question_count+' پرسش)</button>':"")+'</div></div>';
+ $("backLesson").onclick=()=>openSubject(subject.slug);
+ $("completeLesson").onclick=async()=>{if(!user){showAuth();return}const btn=$("completeLesson");btn.disabled=true;const res=await db.from("lesson_progress").upsert({user_id:user.id,lesson_id:id,status:"completed",progress_percent:100,last_seen_at:new Date().toISOString(),completed_at:new Date().toISOString()});btn.disabled=false;if(res.error)toast("ذخیره پیشرفت ناموفق بود");else{progressLoadedFor=null;await loadProgress();toast("درس تکمیل‌شده ثبت شد");setView("progress")}};
+ if(quiz)$("lessonQuiz").onclick=()=>startQuiz(quiz.id,quiz.title)
 }
 async function loadProgress(){if(!user){progress=[];return}let {data}=await db.from('lesson_progress').select('*').eq('user_id',user.id);progress=data||[]}
 function progressView(){ $('crumb').textContent='مسیر پیشرفت';$('view').innerHTML='<div class="section-head"><div><h2>مسیر پیشرفت</h2><p>مرور فعالیت‌های آموزشی حساب کاربری</p></div></div><div class="content-panel" id="progressPanel"><div class="empty">در حال بارگذاری…</div></div>';if(!user){$('progressPanel').innerHTML='<div class="empty">برای ثبت و مشاهده پیشرفت، ابتدا وارد حساب کاربری شو.<br><button class="primary" onclick="showAuth()">ورود / ثبت‌نام</button></div>';return}loadProgress().then(()=>{$('progressPanel').innerHTML=progress.length?progress.map(p=>`<div class="lesson-row"><div><b>${p.status==='completed'?'✓ تکمیل‌شده':'در حال یادگیری'}</b><small>${p.progress_percent}% پیشرفت</small></div><span>${new Date(p.last_seen_at).toLocaleDateString('fa-IR')}</span></div>`).join(''):'<div class="empty">هنوز فعالیتی ثبت نشده است. از بخش درس‌ها شروع کن.</div>'})}
