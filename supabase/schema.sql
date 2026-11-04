@@ -1,5 +1,19 @@
--- RJF8 GRADE 9 initial database schema
--- This migration has already been applied to Supabase project gbuomuxrgmombwgsftce.
--- Keep this file as the versioned schema reference. See README.md for setup notes.
--- Tables: profiles, subjects, lessons, quizzes, quiz_questions, private.quiz_answer_keys,
--- lesson_progress, quiz_attempts, announcements. RLS is enabled on all exposed tables.
+-- RJF8 GRADE 9 schema reference
+-- Applied to Supabase project gbuomuxrgmombwgsftce.
+-- Core tables:
+-- public.profiles, public.subjects, public.lessons, public.quizzes,
+-- public.quiz_questions, public.lesson_progress, public.quiz_attempts,
+-- public.announcements, private.quiz_answer_keys.
+--
+-- RLS is enabled on all user-facing tables.
+-- Correct answers are held in private.quiz_answer_keys and are never
+-- selected by the browser client.
+--
+-- Quiz scoring is performed by public.submit_quiz_attempt(uuid,jsonb):
+-- it requires auth.uid(), checks published quiz/questions, scores against
+-- private answer keys, records the attempt, awards XP, and updates lesson
+-- completion progress. EXECUTE is granted to authenticated only.
+--
+-- Seed content currently in the live database:
+-- 11 subjects, 22 published lessons, 22 published quizzes, 66 questions.
+-- This file is a reference summary, not a full schema bootstrap migration.
